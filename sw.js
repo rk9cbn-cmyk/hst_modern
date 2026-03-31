@@ -1,6 +1,6 @@
 const CACHE_NAME = 'hst-modern-v1';
 const ASSETS = [
-  'hst_modern.html',
+  'index.html',
   'manifest.json',
   'icon.svg'
 ];

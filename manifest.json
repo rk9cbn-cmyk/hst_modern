@@ -2,7 +2,7 @@
   "name": "HST Modern",
   "short_name": "HST",
   "description": "Professional Morse Code Trainer",
-  "start_url": "hst_modern.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
