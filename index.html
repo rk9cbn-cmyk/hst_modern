@@ -1132,6 +1132,28 @@
         let compPause = 30, compLogs = [], compFinishedCount = 0;
         const engine = new MorseEngine();
         let timerId = null, countdownTimer = null;
+        let wakeLock = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Screen Wake Lock was released');
+                        wakeLock = null;
+                    });
+                    console.log('Screen Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        };
+
+        const releaseWakeLock = () => {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+        };
 
         const getUnits = (toks, pc, pg) => {
             let u = 0;
@@ -1216,6 +1238,7 @@
 
         const start = () => {
             console.log("Start button clicked. AppMode:", appMode);
+            requestWakeLock();
             closeSidebar();
             if (playing) { stopAll(); return; }
             generate();
@@ -1291,6 +1314,7 @@
 
         const stopAll = () => {
             playing = false;
+            releaseWakeLock();
             if (timerId) clearInterval(timerId); timerId = null;
             if (countdownTimer) clearInterval(countdownTimer); countdownTimer = null;
             engine.stop(); updateUI();
@@ -1305,6 +1329,7 @@
             a.href = URL.createObjectURL(blob); a.download = `HST_Comp_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
             a.click();
             compFinishedCount = 0; compLogs = []; stopAll();
+            releaseWakeLock();
             document.getElementById('compOverlay').classList.remove('open');
         };
 
