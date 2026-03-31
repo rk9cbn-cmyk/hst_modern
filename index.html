@@ -1035,10 +1035,10 @@
         };
 
         const M = {
-            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-', 'Y': '-.--', 'Z': '--..',
-            '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----',
-            '=': '-...-', 'А': '.-', 'Б': '-...', 'В': '.--', 'Г': '--.', 'Д': '-..', 'Е': '.', 'Ж': '...-', 'З': '--..', 'И': '..', 'Й': '.---', 'К': '-.-', 'Л': '.-..', 'М': '--', 'Н': '-.', 'О': '---', 'П': '.--.', 'Р': '.-.', 'С': '...', 'Т': '-', 'У': '..-', 'Ф': '..-.', 'Х': '....', 'Ц': '-.-.', 'Ч': '---.', 'Ш': '----', 'Щ': '--.-', 'Э': '..-..', 'Ю': '..--', 'Я': '.-.-', 'Ь': '-..-', 'Ы': '-.--', 'Ъ': '--.--',
-            '.': '.-.-.-', ',': '--..--', '?': '..--..', '/', '-..-.', 'AR': '.-.-.'
+            "A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..", "M": "--", "N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.", "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-", "Y": "-.--", "Z": "--..",
+            "1": ".----", "2": "..---", "3": "...--", "4": "....-", "5": ".....", "6": "-....", "7": "--...", "8": "---..", "9": "----.", "0": "-----",
+            "=": "-...-", "А": ".-", "Б": "-...", "В": ".--", "Г": "--.", "Д": "-..", "Е": ".", "Ж": "...-", "З": "--..", "И": "..", "Й": ".---", "К": "-.-", "Л": ".-..", "М": "--", "Н": "-.", "О": "---", "П": ".--.", "Р": ".-.", "С": "...", "Т": "-", "У": "..-", "Ф": "..-.", "Х": "....", "Ц": "-.-.", "Ч": "---.", "Ш": "----", "Щ": "--.-", "Э": "..-..", "Ю": "..--", "Я": ".-.-", "Ь": "-..-", "Ы": "-.--", "Ъ": "--.--",
+            ".": ".-.-.-", ",": "--..--", "?": "..--..", "/": "-..-.", "AR": ".-.-."
         };
 
         class MorseEngine {
@@ -1103,7 +1103,10 @@
         const getUnits = (toks, pc, pg) => {
             let u = 0;
             toks.forEach(tk => {
-                if (tk.m) { parseInt(tk.m.split('').forEach(b => { u += (b === '.' ? 2 : 4); })); u += (pc - 1); }
+                if (tk.m) { 
+                    tk.m.split('').forEach(b => { u += (b === '.' ? 2 : 4); }); 
+                    u += (pc - 1); 
+                }
                 if (tk.isSpace) u += (pg - pc);
             });
             return u;
@@ -1179,6 +1182,7 @@
         };
 
         const start = () => {
+            console.log("Start button clicked. AppMode:", appMode);
             closeSidebar();
             if (playing) { stopAll(); return; }
             generate();
@@ -1216,7 +1220,15 @@
                 if (d >= targetSecs * 1000) { clearInterval(timerId); timerId = null; }
             }, 100);
 
-            engine.play(head.concat(body, tail), realDot, pChar, pGroup, (g, c) => { document.querySelectorAll('.char.active').forEach(e => e.classList.remove('active')); const el = document.getElementById(`c-${g}-${c}`); if (el) el.classList.add('active'); }, onDone);
+            console.log("Starting play...", { totalChars, targetSecs, unitsBody, realDot });
+
+            engine.play(head.concat(body, tail), realDot, pChar, pGroup, (g, c) => {
+                const el = document.getElementById(`c-${g}-${c}`);
+                if (el) {
+                    document.querySelectorAll('.char.active').forEach(e => e.classList.remove('active'));
+                    el.classList.add('active');
+                }
+            }, onDone);
         };
 
         const onDone = () => {
@@ -1270,12 +1282,27 @@
         document.getElementById('closeSettings').onclick = () => document.getElementById('settingsModal').classList.remove('open');
         document.getElementById('langSelect').onchange = (e) => { lang = e.target.value; updateLang(); };
         document.getElementById('appModeSelect').onchange = (e) => { appMode = e.target.value; updateUI(); generate(); if (appMode !== 'comp') document.getElementById('compOverlay').classList.remove('open'); };
-        document.getElementById('applySettings').onclick = () => { lang = document.getElementById('langSelect').value; appMode = document.getElementById('appModeSelect').value; excluded = document.getElementById('excludeChars').value; document.getElementById('settingsModal').classList.remove('open'); updateUI(); generate(); closeSidebar(); };
+        
+        document.getElementById('applySettings').onclick = () => {
+            lang = document.getElementById('langSelect').value;
+            appMode = document.getElementById('appModeSelect').value;
+            excluded = document.getElementById('excludeChars').value;
+            pChar = parseInt(document.getElementById('pCharVal').value) || 3;
+            pGroup = parseInt(document.getElementById('pGroupVal').value) || 7;
+            compPause = parseInt(document.getElementById('compPauseVal').value) || 30;
+            freq = parseInt(document.getElementById('freqVal').value) || 750;
+            
+            document.getElementById('settingsModal').classList.remove('open');
+            updateUI();
+            generate();
+            closeSidebar();
+            console.log("Settings applied:", { lang, appMode, pChar, pGroup, freq });
+        };
+
         document.getElementById('typeSelect').onchange = (e) => { textType = e.target.value; generate(); };
-        document.getElementById('speedVal').onchange = (e) => { speed = parseInt(e.target.value) || speed; updateUI(); };
+        document.getElementById('speedVal').onchange = (e) => { speed = Math.max(20, Math.min(400, parseInt(e.target.value) || 100)); updateUI(); };
         document.getElementById('speedDec').onclick = () => { speed = Math.max(20, speed - 10); updateUI(); };
         document.getElementById('speedInc').onclick = () => { speed = Math.min(400, speed + 10); updateUI(); };
-        document.getElementById('speedVal').onchange = (e) => { speed = Math.max(20, Math.min(400, parseInt(e.target.value) || 100)); updateUI(); };
         document.getElementById('freqDec').onclick = () => { freq = Math.max(300, freq - 10); updateUI(); };
         document.getElementById('freqInc').onclick = () => { freq = Math.min(1000, freq + 10); updateUI(); };
         document.getElementById('freqVal').onchange = (e) => { freq = Math.max(300, Math.min(1000, parseInt(e.target.value) || 750)); updateUI(); };
@@ -1297,6 +1324,7 @@
         document.getElementById('compFinishBtnOverlay').onclick = finishComp;
         document.getElementById('genBtn').onclick = () => { generate(); closeSidebar(); };
         document.querySelectorAll('.btn-start').forEach(btn => btn.onclick = start);
+        
         generate(); updateUI();
 
         if ('serviceWorker' in navigator) {
