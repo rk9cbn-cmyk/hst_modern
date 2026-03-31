@@ -1064,49 +1064,60 @@
                 const o = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
                 const f = this.ctx.createBiquadFilter();
-                f.type = 'lowpass'; f.frequency.setValueAtTime(1800, 0); f.Q.setValueAtTime(0, 0);
+                
+                // High cutoff to preserve sharpness
+                f.type = 'lowpass'; f.frequency.setValueAtTime(3000, 0); f.Q.setValueAtTime(0, 0);
                 o.type = 'sine'; o.frequency.setValueAtTime(this.freq, 0);
+                
                 g.gain.setValueAtTime(0, 0);
                 o.connect(g); g.connect(f); f.connect(this.gain);
                 
-                // Adaptive attack: 10% of dot duration, but 0.5ms - 4ms range
-                const tc = Math.max(0.0005, Math.min(0.004, dot * 0.1));
                 let t = this.ctx.currentTime + 0.05;
+                const transition = 0.0015; // 1.5ms linear ramp - standard for high speed morse
                 
                 this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
-                this.gain.gain.setTargetAtTime(0.4, this.ctx.currentTime, 0.02);
+                this.gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.01);
 
                 toks.forEach(tk => {
                     const delay = Math.max(0, (t - this.ctx.currentTime + 0.01) * 1000);
                     const tid = setTimeout(() => onS(tk.g, tk.c), delay);
                     this.timers.push(tid);
+                    
                     if (tk.m) {
                         for (let b of tk.m) {
                             const d = (b === '.' ? dot : dot * 3);
-                            g.gain.setTargetAtTime(1, t, tc);
-                            g.gain.setTargetAtTime(0, t + d, tc);
-                            g.gain.setValueAtTime(0, t + d + (tc * 7));
+                            // Attack
+                            g.gain.setValueAtTime(0, t);
+                            g.gain.linearRampToValueAtTime(1, t + transition);
+                            // Decay
+                            g.gain.setValueAtTime(1, t + d - transition);
+                            g.gain.linearRampToValueAtTime(0, t + d);
+                            
                             t += d + dot;
                         }
                         t += dot * (pc - 1);
                     }
                     if (tk.isSpace) t += dot * (pg - pc);
                 });
-                o.start(this.ctx.currentTime); this.osc = o; this.subGain = g;
+                
+                o.start(this.ctx.currentTime); 
+                this.osc = o; 
+                this.subGain = g;
+                
                 const endT = t + 0.05;
                 this.timers.push(setTimeout(() => { this.stop(); onD(); }, (endT - this.ctx.currentTime) * 1000));
             }
             stop() {
-                this.timers.forEach(clearTimeout); this.timers = [];
+                this.timers.forEach(clearTimeout); 
+                this.timers = [];
                 if (this.osc) {
                     try {
                         const now = this.ctx && this.ctx.currentTime ? this.ctx.currentTime : 0;
                         if (this.gain) {
                             this.gain.gain.cancelScheduledValues(now);
-                            this.gain.gain.setTargetAtTime(0, now, 0.02);
+                            this.gain.gain.linearRampToValueAtTime(0, now + 0.01);
                         }
-                        this.osc.stop(now + 0.1);
-                        if (this.subGain) this.subGain.gain.setValueAtTime(0, now + 0.05);
+                        this.osc.stop(now + 0.05);
                     } catch (e) { }
                     this.osc = null;
                 }
