@@ -1064,15 +1064,17 @@
                 const o = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
                 const f = this.ctx.createBiquadFilter();
-                f.type = 'lowpass'; f.frequency.setValueAtTime(1200, 0); f.Q.setValueAtTime(0, 0);
+                f.type = 'lowpass'; f.frequency.setValueAtTime(1800, 0); f.Q.setValueAtTime(0, 0);
                 o.type = 'sine'; o.frequency.setValueAtTime(this.freq, 0);
                 g.gain.setValueAtTime(0, 0);
                 o.connect(g); g.connect(f); f.connect(this.gain);
-                let t = this.ctx.currentTime + 0.1;
-                const tc = 0.005; // Slightly softer time constant
+                
+                // Adaptive attack: 10% of dot duration, but 0.5ms - 4ms range
+                const tc = Math.max(0.0005, Math.min(0.004, dot * 0.1));
+                let t = this.ctx.currentTime + 0.05;
                 
                 this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
-                this.gain.gain.setTargetAtTime(0.4, this.ctx.currentTime, 0.05);
+                this.gain.gain.setTargetAtTime(0.4, this.ctx.currentTime, 0.02);
 
                 toks.forEach(tk => {
                     const delay = Math.max(0, (t - this.ctx.currentTime + 0.01) * 1000);
@@ -1091,7 +1093,7 @@
                     if (tk.isSpace) t += dot * (pg - pc);
                 });
                 o.start(this.ctx.currentTime); this.osc = o; this.subGain = g;
-                const endT = t + 0.1;
+                const endT = t + 0.05;
                 this.timers.push(setTimeout(() => { this.stop(); onD(); }, (endT - this.ctx.currentTime) * 1000));
             }
             stop() {
@@ -1101,10 +1103,10 @@
                         const now = this.ctx && this.ctx.currentTime ? this.ctx.currentTime : 0;
                         if (this.gain) {
                             this.gain.gain.cancelScheduledValues(now);
-                            this.gain.gain.setTargetAtTime(0, now, 0.05);
+                            this.gain.gain.setTargetAtTime(0, now, 0.02);
                         }
-                        this.osc.stop(now + 0.2);
-                        if (this.subGain) this.subGain.gain.setValueAtTime(0, now + 0.1);
+                        this.osc.stop(now + 0.1);
+                        if (this.subGain) this.subGain.gain.setValueAtTime(0, now + 0.05);
                     } catch (e) { }
                     this.osc = null;
                 }
