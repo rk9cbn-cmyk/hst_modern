@@ -6,6 +6,15 @@
 ![Технологии](https://img.shields.io/badge/Tech-HTML5_/_JS_/_PWA-orange)
 
 ---
+## Автор / Author
+**Nickolay Bakhvalov**
+*Telegram: [@Nikolay_Bah](https://t.me/Nikolay_Bah)*
+
+---
+## Лицензия / License
+MIT License. Свободное использование в тренировочных целях.
+
+---
 
 ## 🌟 Основные возможности
 
