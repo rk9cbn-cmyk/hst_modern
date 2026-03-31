@@ -1046,83 +1046,136 @@
         };
 
         class MorseEngine {
-            constructor() { this.timers = []; this.ctx = null; this.freq = 750; }
+            constructor() {
+                this.ctx = null;
+                this.freq = 750;
+                this.vQueue = [];
+                this.tokens = [];
+                this.nextT = 0;
+                this.dot = 0.05;
+                this.pc = 3;
+                this.pg = 7;
+                this.onS = null;
+                this.onD = null;
+                this.running = false;
+                this.lookahead = 0.4;
+                this.scheduleId = null;
+            }
+
             init() {
                 if (!this.ctx) {
                     try {
                         this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+                        
+                        // Professional Signal Chain to prevent OS "auto-tuning"
+                        this.comp = this.ctx.createDynamicsCompressor();
+                        this.comp.threshold.setValueAtTime(-24, this.ctx.currentTime);
+                        this.comp.knee.setValueAtTime(30, this.ctx.currentTime);
+                        this.comp.ratio.setValueAtTime(12, this.ctx.currentTime);
+                        this.comp.attack.setValueAtTime(0.003, this.ctx.currentTime);
+                        this.comp.release.setValueAtTime(0.25, this.ctx.currentTime);
+
                         this.gain = this.ctx.createGain();
-                        this.gain.gain.setValueAtTime(0, 0);
-                        this.gain.connect(this.ctx.destination);
+                        this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                        
+                        this.gain.connect(this.comp);
+                        this.comp.connect(this.ctx.destination);
                     } catch (e) { console.error("Audio init error:", e); }
                 }
                 if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
             }
+
             play(toks, dot, pc, pg, onS, onD) {
-                this.stop(); 
+                this.stop();
                 this.init();
+                
+                this.tokens = [...toks];
+                this.dot = dot; this.pc = pc; this.pg = pg;
+                this.onS = onS; this.onD = onD;
+                this.running = true;
+
                 const o = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
                 const f = this.ctx.createBiquadFilter();
                 
-                // High cutoff to preserve sharpness
-                f.type = 'lowpass'; f.frequency.setValueAtTime(3000, 0); f.Q.setValueAtTime(0, 0);
-                o.type = 'sine'; o.frequency.setValueAtTime(this.freq, 0);
+                // Stable initialization relative to currentTime
+                const now = this.ctx.currentTime;
+                f.type = 'lowpass'; 
+                f.frequency.setValueAtTime(2400, now); 
+                f.Q.setValueAtTime(0, now);
                 
-                g.gain.setValueAtTime(0, 0);
+                o.type = 'sine'; 
+                o.frequency.setValueAtTime(this.freq, now);
+                
+                g.gain.setValueAtTime(0, now);
                 o.connect(g); g.connect(f); f.connect(this.gain);
-                
-                let t = this.ctx.currentTime + 0.05;
-                const transition = 0.0015; // 1.5ms linear ramp - standard for high speed morse
-                
-                this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
-                this.gain.gain.linearRampToValueAtTime(0.4, this.ctx.currentTime + 0.01);
+                this.osc = o; this.subGain = g;
 
-                toks.forEach(tk => {
-                    const delay = Math.max(0, (t - this.ctx.currentTime + 0.01) * 1000);
-                    const tid = setTimeout(() => onS(tk.g, tk.c), delay);
-                    this.timers.push(tid);
-                    
+                this.nextT = now + 0.25; 
+                this.gain.gain.cancelScheduledValues(now);
+                this.gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+
+                o.start(now);
+                this._tick();
+            }
+
+            _tick() {
+                if (!this.running || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const transition = 0.002; // Slightly softer transition (2ms) prevents clicks
+
+                // 1. Audio Scheduling
+                while (this.tokens.length > 0 && this.nextT < now + this.lookahead) {
+                    const tk = this.tokens.shift();
+                    this.vQueue.push({ t: this.nextT, g: tk.g, c: tk.c });
+
                     if (tk.m) {
                         for (let b of tk.m) {
-                            const d = (b === '.' ? dot : dot * 3);
-                            // Attack
-                            g.gain.setValueAtTime(0, t);
-                            g.gain.linearRampToValueAtTime(1, t + transition);
-                            // Decay
-                            g.gain.setValueAtTime(1, t + d - transition);
-                            g.gain.linearRampToValueAtTime(0, t + d);
-                            
-                            t += d + dot;
+                            const d = (b === '.' ? this.dot : this.dot * 3);
+                            this.subGain.gain.setValueAtTime(0, this.nextT);
+                            this.subGain.gain.linearRampToValueAtTime(1, this.nextT + transition);
+                            this.subGain.gain.setValueAtTime(1, this.nextT + d - transition);
+                            this.subGain.gain.linearRampToValueAtTime(0, this.nextT + d);
+                            this.nextT += d + this.dot;
                         }
-                        t += dot * (pc - 1);
+                        this.nextT += this.dot * (this.pc - 1);
                     }
-                    if (tk.isSpace) t += dot * (pg - pc);
-                });
-                
-                o.start(this.ctx.currentTime); 
-                this.osc = o; 
-                this.subGain = g;
-                
-                const endT = t + 0.05;
-                this.timers.push(setTimeout(() => { this.stop(); onD(); }, (endT - this.ctx.currentTime) * 1000));
+                    if (tk.isSpace) this.nextT += this.dot * (this.pg - this.pc);
+                }
+
+                // 2. Visual Synchronization
+                const outLat = (this.ctx.outputLatency || 0.08); 
+                while (this.vQueue.length > 0 && this.vQueue[0].t <= now - outLat) {
+                    const ev = this.vQueue.shift();
+                    if (this.onS) this.onS(ev.g, ev.c);
+                }
+
+                if (this.tokens.length === 0 && this.vQueue.length === 0 && now > this.nextT + 0.2) {
+                    this.stop();
+                    if (this.onD) this.onD();
+                    return;
+                }
+                this.scheduleId = requestAnimationFrame(() => this._tick());
             }
+
             stop() {
-                this.timers.forEach(clearTimeout); 
-                this.timers = [];
+                this.running = false;
+                if (this.scheduleId) cancelAnimationFrame(this.scheduleId);
+                this.vQueue = [];
+                this.tokens = [];
                 if (this.osc) {
                     try {
-                        const now = this.ctx && this.ctx.currentTime ? this.ctx.currentTime : 0;
+                        const now = this.ctx ? this.ctx.currentTime : 0;
                         if (this.gain) {
                             this.gain.gain.cancelScheduledValues(now);
-                            this.gain.gain.linearRampToValueAtTime(0, now + 0.01);
+                            this.gain.gain.linearRampToValueAtTime(0, now + 0.02);
                         }
-                        this.osc.stop(now + 0.05);
+                        this.osc.stop(now + 0.1);
                     } catch (e) { }
                     this.osc = null;
                 }
                 if (this.ctx && this.ctx.state === 'running') {
-                    setTimeout(() => { if (!playing && this.ctx) this.ctx.suspend(); }, 2000);
+                    setTimeout(() => { if (!this.running && this.ctx) this.ctx.suspend(); }, 5000);
                 }
             }
         }
@@ -1278,11 +1331,25 @@
 
             console.log("Starting play...", { totalChars, targetSecs, unitsBody, realDot });
 
+            let lastActiveCharEl = null;
             engine.play(head.concat(body, tail), realDot, pChar, pGroup, (g, c) => {
                 const el = document.getElementById(`c-${g}-${c}`);
                 if (el) {
-                    document.querySelectorAll('.char.active').forEach(e => e.classList.remove('active'));
+                    if (lastActiveCharEl) lastActiveCharEl.classList.remove('active');
                     el.classList.add('active');
+                    lastActiveCharEl = el;
+                    
+                    // Auto-scroll logic for mobile
+                    if (g >= 0 && c === 0) {
+                        const main = document.querySelector('main');
+                        if (main) {
+                            const rect = el.getBoundingClientRect();
+                            const mainRect = main.getBoundingClientRect();
+                            if (rect.bottom > mainRect.bottom - 100 || rect.top < mainRect.top + 100) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
+                    }
                 }
             }, onDone);
         };
