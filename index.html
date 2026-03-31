@@ -1050,32 +1050,40 @@
             init() {
                 if (!this.ctx) {
                     try {
-                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
                         this.gain = this.ctx.createGain();
                         this.gain.gain.setValueAtTime(0, 0);
                         this.gain.connect(this.ctx.destination);
-                    } catch (e) { }
+                    } catch (e) { console.error("Audio init error:", e); }
                 }
+                if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
             }
             play(toks, dot, pc, pg, onS, onD) {
-                this.init(); if (this.ctx.state === 'suspended') this.ctx.resume();
+                this.stop(); 
+                this.init();
                 const o = this.ctx.createOscillator();
                 const g = this.ctx.createGain();
                 const f = this.ctx.createBiquadFilter();
-                f.type = 'lowpass'; f.frequency.setValueAtTime(1400, 0); f.Q.setValueAtTime(0, 0);
+                f.type = 'lowpass'; f.frequency.setValueAtTime(1200, 0); f.Q.setValueAtTime(0, 0);
                 o.type = 'sine'; o.frequency.setValueAtTime(this.freq, 0);
                 g.gain.setValueAtTime(0, 0);
                 o.connect(g); g.connect(f); f.connect(this.gain);
-                let t = this.ctx.currentTime + 0.3; // Maximum stability lookahead
-                const tc = 0.0035; // Fine-tuned time constant
-                this.gain.gain.setTargetAtTime(0.4, this.ctx.currentTime, 0.02);
+                let t = this.ctx.currentTime + 0.1;
+                const tc = 0.005; // Slightly softer time constant
+                
+                this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+                this.gain.gain.setTargetAtTime(0.4, this.ctx.currentTime, 0.05);
+
                 toks.forEach(tk => {
-                    const tid = setTimeout(() => onS(tk.g, tk.c), (t - this.ctx.currentTime + 0.03) * 1000); this.timers.push(tid);
+                    const delay = Math.max(0, (t - this.ctx.currentTime + 0.01) * 1000);
+                    const tid = setTimeout(() => onS(tk.g, tk.c), delay);
+                    this.timers.push(tid);
                     if (tk.m) {
                         for (let b of tk.m) {
                             const d = (b === '.' ? dot : dot * 3);
                             g.gain.setTargetAtTime(1, t, tc);
                             g.gain.setTargetAtTime(0, t + d, tc);
+                            g.gain.setValueAtTime(0, t + d + (tc * 7));
                             t += d + dot;
                         }
                         t += dot * (pc - 1);
@@ -1083,17 +1091,25 @@
                     if (tk.isSpace) t += dot * (pg - pc);
                 });
                 o.start(this.ctx.currentTime); this.osc = o; this.subGain = g;
-                const endT = t + 0.3;
+                const endT = t + 0.1;
                 this.timers.push(setTimeout(() => { this.stop(); onD(); }, (endT - this.ctx.currentTime) * 1000));
             }
             stop() {
                 this.timers.forEach(clearTimeout); this.timers = [];
                 if (this.osc) {
                     try {
-                        this.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
-                        this.osc.stop(this.ctx.currentTime + 0.3);
+                        const now = this.ctx && this.ctx.currentTime ? this.ctx.currentTime : 0;
+                        if (this.gain) {
+                            this.gain.gain.cancelScheduledValues(now);
+                            this.gain.gain.setTargetAtTime(0, now, 0.05);
+                        }
+                        this.osc.stop(now + 0.2);
+                        if (this.subGain) this.subGain.gain.setValueAtTime(0, now + 0.1);
                     } catch (e) { }
                     this.osc = null;
+                }
+                if (this.ctx && this.ctx.state === 'running') {
+                    setTimeout(() => { if (!playing && this.ctx) this.ctx.suspend(); }, 2000);
                 }
             }
         }
@@ -1330,6 +1346,10 @@
         document.querySelectorAll('.btn-start').forEach(btn => btn.onclick = start);
         
         generate(); updateUI();
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && playing) stopAll();
+        });
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
