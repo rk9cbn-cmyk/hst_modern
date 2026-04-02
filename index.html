@@ -95,6 +95,7 @@
                 display: flex;
                 flex-direction: column;
                 padding: 20px;
+                padding-bottom: 80px;
                 overflow-y: auto;
             }
 
@@ -856,6 +857,10 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        details[open] .install-chevron { transform: rotate(180deg); }
+        details summary::-webkit-details-marker { display: none; }
+        details summary { outline: none; }
     </style>
 </head>
 
@@ -942,22 +947,43 @@
                     </div>
 
                     <div class="divider"></div>
-                    <div style="background: var(--slate-50); padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 20px;">📱</span>
-                            <span data-t="how_to_install" style="font-weight: 900; font-size: 11px; text-transform: uppercase; color: var(--indigo);">How to Install App</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div>
-                                <div style="font-weight: 800; font-size: 10px; margin-bottom: 6px; color: var(--slate-700);">ANDROID (Chrome)</div>
-                                <div data-t="android_inst" style="font-size: 11px; line-height: 1.4; color: var(--slate-400); white-space: pre-line;">1. Open in Chrome\n2. Tap menu\n3. Select 'Install'</div>
+                    <details style="background: var(--slate-50); border-radius: 16px;">
+                        <summary style="display: flex; align-items: center; gap: 8px; padding: 14px 16px; cursor: pointer; list-style: none; user-select: none; -webkit-user-select: none;">
+                            <span style="font-size: 18px;">📱</span>
+                            <span data-t="how_to_install" style="font-weight: 900; font-size: 11px; text-transform: uppercase; color: var(--indigo); flex: 1;">How to Install App</span>
+                            <svg class="install-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s; flex-shrink: 0;"><path d="m6 9 6 6 6-6"/></svg>
+                        </summary>
+                        <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px;">
+                            <div style="background: #EFF6FF; border-left: 3px solid #3B82F6; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 11px; color: #1E40AF; line-height: 1.5;" data-t="install_tip">
+                                💡 В приложении можно тренироваться без интернета.
                             </div>
-                            <div>
-                                <div style="font-weight: 800; font-size: 10px; margin-bottom: 6px; color: var(--slate-700);">iOS (Safari)</div>
-                                <div data-t="ios_inst" style="font-size: 11px; line-height: 1.4; color: var(--slate-400); white-space: pre-line;">1. Open in Safari\n2. Tap 'Share'\n3. Select 'Add to Home Screen'</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                                        <span style="font-size: 16px;">🤖</span>
+                                        <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">ANDROID</div>
+                                    </div>
+                                    <div style="font-size: 9px; font-weight: 700; color: var(--slate-400); margin-bottom: 4px; text-transform: uppercase;">Chrome</div>
+                                    <div data-t="android_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">1. Open in Chrome\n2. Tap menu\n3. Select 'Install'</div>
+                                </div>
+                                <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                                        <span style="font-size: 16px;">🍎</span>
+                                        <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">iOS / iPadOS</div>
+                                    </div>
+                                    <div style="font-size: 9px; font-weight: 700; color: var(--slate-400); margin-bottom: 4px; text-transform: uppercase;">Safari</div>
+                                    <div data-t="ios_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">1. Open in Safari\n2. Tap 'Share'\n3. Select 'Add to Home Screen'</div>
+                                </div>
+                            </div>
+                            <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
+                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                                    <span style="font-size: 16px;">💻</span>
+                                    <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">DESKTOP</div>
+                                </div>
+                                <div data-t="desktop_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">Chrome / Edge: нажмите значок установки в адресной строке (справа) или Меню → Установить</div>
                             </div>
                         </div>
-                    </div>
+                    </details>
             </div>
             <div style="padding-top: 20px; border-top: 1px solid var(--slate-100);">
                 <button class="btn-apply" id="applySettings" data-t="apply"
@@ -990,9 +1016,7 @@
             <aside id="sidebar">
                 <div class="sidebar-content"
                     style="flex: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 16px;">
-                    <button class="btn-update" id="genBtn" data-t="update"
-                        style="position: static; width: 100%; border-radius: 12px; margin-bottom: 10px;">Update
-                        Text</button>
+
                     <div class="control-group"><label data-t="type">Type</label><select id="typeSelect">
                             <option value="Letters" data-t="type_letters" selected>Letters</option>
                             <option value="Figures" data-t="type_figures">Figures</option>
@@ -1021,8 +1045,12 @@
                             style="display: block;">Finish</button>
                     </div>
                     
-                    <div style="margin-top: auto; padding-top: 40px; text-align: center; opacity: 0.4; font-size: 10px; font-weight: 800; letter-spacing: 1px;">
-                        DEVELOPED BY<br>NICKOLAY BAKHVALOV
+                    <div style="margin-top: auto; padding-top: 40px; text-align: center; font-size: 10px; font-weight: 800; letter-spacing: 1px;">
+                        <div style="opacity: 0.4; margin-bottom: 10px;">DEVELOPED BY<br>NICKOLAY BAKHVALOV</div>
+                        <a href="https://t.me/Nikolay_Bah" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #229ED9; color: white; border-radius: 10px; text-decoration: none; font-size: 11px; font-weight: 900; letter-spacing: 0.5px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.17 13.668l-2.95-.924c-.64-.203-.658-.64.136-.954l11.566-4.458c.537-.194 1.006.131.972.889z"/></svg>
+                            <span data-t="write_author">Написать</span>
+                        </a>
                     </div>
                 </div>
             </aside>
@@ -1034,8 +1062,8 @@
 
     <script>
         const TRANSLATIONS = {
-            en: { settings: "Settings", language: "Language", app_mode: "App Mode", mode_training: "Training", mode_learning: "Learning", mode_rus: "Russian Letters", mode_comp: "Competition", tone: "Tone (Hz)", exclude_chars: "Exclude Characters", char_pause: "Pause between chars", group_pause: "Pause between groups", time: "Time", type: "Type", type_letters: "Letters", type_figures: "Figures", type_mixed: "Mixed", speed: "Speed (CPM)", mode: "Display Mode", fixed: "FIXED", groups: "Groups", update: "Update Text", apply: "Apply", start: "START", stop: "STOP", mode_1min: "1 MIN", pause_between: "Pause between texts (sec)", hide_screen: "Hide Screen", exit_mode: "Show Main Screen", finish: "Finish", next_text_in: "Next text in", current_speed: "Current Speed", how_to_install: "How to Install App", android_inst: "1. Open in Chrome\n2. Tap (⋮) menu\n3. Select 'Install' or 'Add to Home Screen'", ios_inst: "1. Open in Safari\n2. Tap 'Share' icon\n3. Select 'Add to Home Screen'" },
-            ru: { settings: "Настройки", language: "Язык", app_mode: "Режим работы", mode_training: "Тренировка", mode_learning: "Обучение", mode_rus: "Русские буквы", mode_comp: "Соревнование", tone: "Тон (Гц)", exclude_chars: "Исключить знаки", char_pause: "Пауза между знаками", group_pause: "Пауза между группами", time: "Время", type: "Тип текста", type_letters: "Буквы", type_figures: "Цифры", type_mixed: "Смесь", speed: "Скорость (зн/мин)", mode: "Режим отображения", fixed: "ФИКС.", groups: "Группы", update: "Обновить текст", apply: "Применить", start: "СТАРТ", stop: "СТОП", mode_1min: "1 МИН", pause_between: "Пауза между текстами (сек)", hide_screen: "Скрыть экран", exit_mode: "Показать экран", finish: "Закончить", next_text_in: "Следующий текст через", current_speed: "Текущая скорость", how_to_install: "Как установить приложение", android_inst: "1. Откройте в Chrome\n2. Нажмите (⋮) в углу\n3. Нажмите 'Установить' или 'На главную'", ios_inst: "1. Откройте в Safari\n2. Нажмите 'Поделиться'\n3. Нажмите 'На экран «Домой»'" }
+            en: { settings: "Settings", language: "Language", app_mode: "App Mode", mode_training: "Training", mode_learning: "Learning", mode_rus: "Russian Letters", mode_comp: "Competition", tone: "Tone (Hz)", exclude_chars: "Exclude Characters", char_pause: "Pause between chars", group_pause: "Pause between groups", time: "Time", type: "Type", type_letters: "Letters", type_figures: "Figures", type_mixed: "Mixed", speed: "Speed (CPM)", mode: "Display Mode", fixed: "FIXED", groups: "Groups", update: "Update Text", apply: "Apply", start: "START", stop: "STOP", mode_1min: "1 MIN", pause_between: "Pause between texts (sec)", hide_screen: "Hide Screen", exit_mode: "Show Main Screen", finish: "Finish", next_text_in: "Next text in", current_speed: "Current Speed", how_to_install: "How to Install App", android_inst: "1. Open in Chrome\n2. Tap (⋮) menu\n3. Select 'Install' or 'Add to Home Screen'", ios_inst: "1. Open in Safari\n2. Tap the Share icon (□↑)\n3. Select 'Add to Home Screen'", install_tip: "💡 You can train offline in the app.", desktop_inst: "Chrome / Edge: click the install icon in the address bar (right side) or Menu → Install", write_author: "Contact" },
+            ru: { settings: "Настройки", language: "Язык", app_mode: "Режим работы", mode_training: "Тренировка", mode_learning: "Обучение", mode_rus: "Русские буквы", mode_comp: "Соревнование", tone: "Тон (Гц)", exclude_chars: "Исключить знаки", char_pause: "Пауза между знаками", group_pause: "Пауза между группами", time: "Время", type: "Тип текста", type_letters: "Буквы", type_figures: "Цифры", type_mixed: "Смесь", speed: "Скорость (зн/мин)", mode: "Режим отображения", fixed: "ФИКС.", groups: "Группы", update: "Обновить текст", apply: "Применить", start: "СТАРТ", stop: "СТОП", mode_1min: "1 МИН", pause_between: "Пауза между текстами (сек)", hide_screen: "Скрыть экран", exit_mode: "Показать экран", finish: "Закончить", next_text_in: "Следующий текст через", current_speed: "Текущая скорость", how_to_install: "Как установить приложение", android_inst: "1. Откройте в Chrome\n2. Нажмите (⋮) в правом углу\n3. Нажмите «Установить» или «На главный экран»", ios_inst: "1. Откройте в Safari\n2. Нажмите «Поделиться» (□↑)\n3. Выберите «На экран «Домой»»", install_tip: "💡 В приложении можно тренироваться без интернета.", desktop_inst: "Chrome / Edge: нажмите значок установки в адресной строке (справа) или Меню → Установить", write_author: "Написать" }
         };
 
         const M = {
@@ -1443,17 +1471,25 @@
         document.getElementById('pGroupInc').onclick = () => { pGroup = Math.min(50, pGroup + 1); updateUI(); };
         document.getElementById('compPauseDec').onclick = () => { compPause = Math.max(20, compPause - 10); updateUI(); };
         document.getElementById('compPauseInc').onclick = () => { compPause = Math.min(120, compPause + 10); updateUI(); };
-        document.getElementById('compHideBtn').onclick = () => document.getElementById('compOverlay').classList.add('open');
+        document.getElementById('compHideBtn').onclick = () => { document.getElementById('compOverlay').classList.add('open'); closeSidebar(); };
         document.getElementById('compExitBtn').onclick = () => document.getElementById('compOverlay').classList.remove('open');
         document.getElementById('compFinishBtn').onclick = finishComp;
         document.getElementById('compFinishBtnOverlay').onclick = finishComp;
-        document.getElementById('genBtn').onclick = () => { generate(); closeSidebar(); };
         document.querySelectorAll('.btn-start').forEach(btn => btn.onclick = start);
         
         generate(); updateUI();
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && playing) stopAll();
+        document.addEventListener('visibilitychange', async () => {
+            if (document.hidden) {
+                // When PWA goes to background — release lock (browser does it anyway)
+                if (playing) stopAll();
+            } else {
+                // When screen wakes up / app returns to foreground —
+                // re-request WakeLock (it is automatically released by the OS on screen-off)
+                if (playing) {
+                    await requestWakeLock();
+                }
+            }
         });
 
         if ('serviceWorker' in navigator) {
