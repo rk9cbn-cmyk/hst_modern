@@ -1,1 +1,8 @@
-
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.bakhvalov.hstmodern",
+    "sha256_cert_fingerprints": ["B4:D9:FC:5B:08:CC:81:09:05:59:6D:EB:9D:F3:B0:86:A2:53:97:B6:7E:22:92:41:FD:3B:B2:4B:C3:9A:3C:36"]
+  }
+}]
