@@ -468,6 +468,9 @@
         .range-wrap {
             width: 100%;
             margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
 
         input[type="range"] {
@@ -690,7 +693,7 @@
             position: fixed;
             inset: 0;
             background: #0b0f19;
-            z-index: 500;
+            z-index: 3000;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -945,45 +948,7 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="divider"></div>
-                    <details style="background: var(--slate-50); border-radius: 16px;">
-                        <summary style="display: flex; align-items: center; gap: 8px; padding: 14px 16px; cursor: pointer; list-style: none; user-select: none; -webkit-user-select: none;">
-                            <span style="font-size: 18px;">📱</span>
-                            <span data-t="how_to_install" style="font-weight: 900; font-size: 11px; text-transform: uppercase; color: var(--indigo); flex: 1;">How to Install App</span>
-                            <svg class="install-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--slate-400)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s; flex-shrink: 0;"><path d="m6 9 6 6 6-6"/></svg>
-                        </summary>
-                        <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px;">
-                            <div style="background: #EFF6FF; border-left: 3px solid #3B82F6; padding: 10px 12px; border-radius: 0 8px 8px 0; font-size: 11px; color: #1E40AF; line-height: 1.5;" data-t="install_tip">
-                                💡 В приложении можно тренироваться без интернета.
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
-                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                        <span style="font-size: 16px;">🤖</span>
-                                        <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">ANDROID</div>
-                                    </div>
-                                    <div style="font-size: 9px; font-weight: 700; color: var(--slate-400); margin-bottom: 4px; text-transform: uppercase;">Chrome</div>
-                                    <div data-t="android_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">1. Open in Chrome\n2. Tap menu\n3. Select 'Install'</div>
-                                </div>
-                                <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
-                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                        <span style="font-size: 16px;">🍎</span>
-                                        <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">iOS / iPadOS</div>
-                                    </div>
-                                    <div style="font-size: 9px; font-weight: 700; color: var(--slate-400); margin-bottom: 4px; text-transform: uppercase;">Safari</div>
-                                    <div data-t="ios_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">1. Open in Safari\n2. Tap 'Share'\n3. Select 'Add to Home Screen'</div>
-                                </div>
-                            </div>
-                            <div style="background: white; border-radius: 12px; padding: 12px; border: 1px solid var(--slate-200);">
-                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                                    <span style="font-size: 16px;">💻</span>
-                                    <div style="font-weight: 800; font-size: 10px; color: var(--slate-700);">DESKTOP</div>
-                                </div>
-                                <div data-t="desktop_inst" style="font-size: 11px; line-height: 1.6; color: var(--slate-500); white-space: pre-line;">Chrome / Edge: нажмите значок установки в адресной строке (справа) или Меню → Установить</div>
-                            </div>
-                        </div>
-                    </details>
+                    
             </div>
             <div style="padding-top: 20px; border-top: 1px solid var(--slate-100);">
                 <button class="btn-apply" id="applySettings" data-t="apply"
@@ -1429,9 +1394,25 @@
         };
 
         const closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); };
-        document.getElementById('menuBtn').onclick = () => { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); };
+        document.getElementById('menuBtn').onclick = () => {
+            // Block sidebar while comp overlay is shown (playing/paused in competition mode)
+            if (document.getElementById('compOverlay').classList.contains('open')) return;
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
+        };
         document.getElementById('overlay').onclick = closeSidebar;
-        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('open');
+        document.getElementById('openSettingsBtn').onclick = () => {
+            // Sync all modal fields to current state before showing
+            document.getElementById('langSelect').value = lang;
+            document.getElementById('appModeSelect').value = appMode;
+            document.getElementById('freqVal').value = freq;
+            document.getElementById('freqRange').value = freq;
+            document.getElementById('pCharVal').value = pChar;
+            document.getElementById('pGroupVal').value = pGroup;
+            document.getElementById('compPauseVal').value = compPause;
+            document.getElementById('excludeChars').value = excluded;
+            document.getElementById('settingsModal').classList.add('open');
+        };
         document.getElementById('closeSettings').onclick = () => document.getElementById('settingsModal').classList.remove('open');
         document.getElementById('langSelect').onchange = (e) => { lang = e.target.value; updateLang(); };
         document.getElementById('appModeSelect').onchange = (e) => { appMode = e.target.value; updateUI(); generate(); if (appMode !== 'comp') document.getElementById('compOverlay').classList.remove('open'); };
@@ -1456,10 +1437,10 @@
         document.getElementById('speedVal').onchange = (e) => { speed = Math.max(20, Math.min(400, parseInt(e.target.value) || 100)); updateUI(); };
         document.getElementById('speedDec').onclick = () => { speed = Math.max(20, speed - 10); updateUI(); };
         document.getElementById('speedInc').onclick = () => { speed = Math.min(400, speed + 10); updateUI(); };
-        document.getElementById('freqDec').onclick = () => { freq = Math.max(300, freq - 10); updateUI(); };
-        document.getElementById('freqInc').onclick = () => { freq = Math.min(1000, freq + 10); updateUI(); };
-        document.getElementById('freqVal').onchange = (e) => { freq = Math.max(300, Math.min(1000, parseInt(e.target.value) || 750)); updateUI(); };
-        document.getElementById('freqRange').oninput = (e) => { freq = parseInt(e.target.value); updateUI(); };
+        document.getElementById('freqDec').onclick = () => { freq = Math.max(300, freq - 10); engine.freq = freq; updateUI(); };
+        document.getElementById('freqInc').onclick = () => { freq = Math.min(1000, freq + 10); engine.freq = freq; updateUI(); };
+        document.getElementById('freqVal').onchange = (e) => { freq = Math.max(300, Math.min(1000, parseInt(e.target.value) || 750)); engine.freq = freq; updateUI(); };
+        document.getElementById('freqRange').oninput = (e) => { freq = parseInt(e.target.value); engine.freq = freq; updateUI(); };
         document.getElementById('modeGroupsBtn').onclick = () => { mode = 'Groups'; updateUI(); generate(); };
         document.getElementById('mode1minBtn').onclick = () => { mode = '1min'; updateUI(); generate(); };
         document.getElementById('groupsDec').onclick = () => { numGroups = Math.max(1, numGroups - 5); updateUI(); generate(); };
