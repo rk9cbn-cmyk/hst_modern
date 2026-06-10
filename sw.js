@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hst-modern-v2';
+const CACHE_NAME = 'hst-modern-v3';
 const ASSETS = [
   'index.html',
   'manifest.json',
@@ -24,9 +24,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const isHTML = req.mode === 'navigate' || req.url.endsWith('index.html');
+
+  if (isHTML) {
+    // Network-first: всегда пробуем свежий index.html, кэш — только офлайн-фолбэк
+    event.respondWith(
+      fetch(req)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return response;
+        })
+        .catch(() => caches.match(req).then((r) => r || caches.match('index.html')))
+    );
+    return;
+  }
+
+  // Cache-first для статики (иконки, манифест)
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(req).then((response) => {
+      return response || fetch(req);
     })
   );
 });
