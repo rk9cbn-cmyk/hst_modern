@@ -1105,8 +1105,10 @@
                 this.osc = o; this.subGain = g;
 
                 this.nextT = now + 0.25; 
-                this.gain.gain.cancelScheduledValues(now);
-                this.gain.gain.linearRampToValueAtTime(0.5, now + 0.05);
+                const mg = this.gain.gain;
+                if (mg.cancelAndHoldAtTime) mg.cancelAndHoldAtTime(now);
+                else mg.cancelScheduledValues(now);
+                mg.setTargetAtTime(0.5, now, 0.015);
 
                 o.start(now);
                 this._tick();
@@ -1115,7 +1117,9 @@
             _tick() {
                 if (!this.running || !this.ctx) return;
                 const now = this.ctx.currentTime;
-                const transition = 0.002; // Slightly softer transition (2ms) prevents clicks
+                // Exponential keying envelope: ~5ms rise/fall, no corners => no key clicks.
+                // Time constant is clamped so edges stay clean even at very high speeds.
+                const tc = Math.min(0.0016, this.dot / 12);
 
                 // 1. Audio Scheduling
                 while (this.tokens.length > 0 && this.nextT < now + this.lookahead) {
@@ -1125,10 +1129,8 @@
                     if (tk.m) {
                         for (let b of tk.m) {
                             const d = (b === '.' ? this.dot : this.dot * 3);
-                            this.subGain.gain.setValueAtTime(0, this.nextT);
-                            this.subGain.gain.linearRampToValueAtTime(1, this.nextT + transition);
-                            this.subGain.gain.setValueAtTime(1, this.nextT + d - transition);
-                            this.subGain.gain.linearRampToValueAtTime(0, this.nextT + d);
+                            this.subGain.gain.setTargetAtTime(1, this.nextT, tc);
+                            this.subGain.gain.setTargetAtTime(0, this.nextT + d, tc);
                             this.nextT += d + this.dot;
                         }
                         this.nextT += this.dot * (this.pc - 1);
@@ -1159,11 +1161,20 @@
                 if (this.osc) {
                     try {
                         const now = this.ctx ? this.ctx.currentTime : 0;
-                        if (this.gain) {
-                            this.gain.gain.cancelScheduledValues(now);
-                            this.gain.gain.linearRampToValueAtTime(0, now + 0.02);
+                        // Fade out the keying gain first so any scheduled element decays smoothly
+                        if (this.subGain) {
+                            const sg = this.subGain.gain;
+                            if (sg.cancelAndHoldAtTime) sg.cancelAndHoldAtTime(now);
+                            else sg.cancelScheduledValues(now);
+                            sg.setTargetAtTime(0, now, 0.005);
                         }
-                        this.osc.stop(now + 0.1);
+                        if (this.gain) {
+                            const mg = this.gain.gain;
+                            if (mg.cancelAndHoldAtTime) mg.cancelAndHoldAtTime(now);
+                            else mg.cancelScheduledValues(now);
+                            mg.setTargetAtTime(0, now + 0.01, 0.01);
+                        }
+                        this.osc.stop(now + 0.15);
                     } catch (e) { }
                     this.osc = null;
                 }
