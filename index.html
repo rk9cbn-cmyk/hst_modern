@@ -1051,28 +1051,19 @@
                 this.onS = null;
                 this.onD = null;
                 this.running = false;
-                this.lookahead = 0.4;
+                this.lookahead = 0.8;
                 this.scheduleId = null;
             }
 
             init() {
                 if (!this.ctx) {
                     try {
-                        this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+                        this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
                         
-                        // Professional Signal Chain to prevent OS "auto-tuning"
-                        this.comp = this.ctx.createDynamicsCompressor();
-                        this.comp.threshold.setValueAtTime(-24, this.ctx.currentTime);
-                        this.comp.knee.setValueAtTime(30, this.ctx.currentTime);
-                        this.comp.ratio.setValueAtTime(12, this.ctx.currentTime);
-                        this.comp.attack.setValueAtTime(0.003, this.ctx.currentTime);
-                        this.comp.release.setValueAtTime(0.25, this.ctx.currentTime);
-
                         this.gain = this.ctx.createGain();
                         this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
-                        
-                        this.gain.connect(this.comp);
-                        this.comp.connect(this.ctx.destination);
+
+                        this.gain.connect(this.ctx.destination);
                     } catch (e) { console.error("Audio init error:", e); }
                 }
                 if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
@@ -1150,12 +1141,13 @@
                     if (this.onD) this.onD();
                     return;
                 }
-                this.scheduleId = requestAnimationFrame(() => this._tick());
+                // setInterval is not throttled like requestAnimationFrame on mobile
+                if (this.scheduleId === null) this.scheduleId = setInterval(() => this._tick(), 25);
             }
 
             stop() {
                 this.running = false;
-                if (this.scheduleId) cancelAnimationFrame(this.scheduleId);
+                if (this.scheduleId !== null) { clearInterval(this.scheduleId); this.scheduleId = null; }
                 this.vQueue = [];
                 this.tokens = [];
                 if (this.osc) {
